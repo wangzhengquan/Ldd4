@@ -28,6 +28,7 @@
 #include <linux/seq_file.h>
 #include <linux/cdev.h>
 
+#include <linux/uaccess.h>
 #include <asm/uaccess.h>	/* copy_*_user */
 
 #include "scull.h"		/* local definitions */
@@ -182,7 +183,8 @@ static struct file_operations scullseq_proc_ops = {
 static void scull_create_proc(void)
 {
 	proc_create_data("scullmem", 0 /* default mode */,
-			NULL /* parent dir */, &scullmem_proc_ops,
+			NULL /* parent dir */, 
+      &scullmem_proc_ops,
 			NULL /* client data */);
 	proc_create_data("scullseq", 0, NULL, &scullseq_proc_ops, NULL);
 }
@@ -283,8 +285,7 @@ struct scull_qset *scull_follow(struct scull_dev *dev, int n)
  * Data management: read and write.
  */
 
-ssize_t scull_read(struct file *filp, char __user *buf, size_t count,
-                loff_t *f_pos)
+ssize_t scull_read(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
 {
 	struct scull_dev *dev = filp->private_data; 
 	struct scull_qset *dptr; /* the first listitem */
@@ -327,8 +328,7 @@ ssize_t scull_read(struct file *filp, char __user *buf, size_t count,
 	return retval;
 }
 
-ssize_t scull_write(struct file *filp, const char __user *buf, size_t count,
-                loff_t *f_pos)
+ssize_t scull_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
 {
 	struct scull_dev *dev = filp->private_data;
 	struct scull_qset *dptr;
@@ -372,7 +372,7 @@ ssize_t scull_write(struct file *filp, const char __user *buf, size_t count,
 	*f_pos += count;
 	retval = count;
 
-        /* Update the size. */
+  /* Update the size. */
 	if (dev->size < *f_pos)
 		dev->size = *f_pos;
 
@@ -624,12 +624,13 @@ int scull_init_module(void)
 				"scull");
 		scull_major = MAJOR(dev);
 	}
+	printk(KERN_WARNING "scull: major %d\n", scull_major);
 	if (result < 0) {
 		printk(KERN_WARNING "scull: can't get major %d\n", scull_major);
 		return result;
 	}
 
-        /* 
+   /* 
 	 * Allocate the devices. This must be dynamic as the device number can
 	 * be specified at load time.
 	 */
@@ -640,7 +641,7 @@ int scull_init_module(void)
 	}
 	memset(scull_devices, 0, scull_nr_devs * sizeof(struct scull_dev));
 
-        /* Initialize each device. */
+  /* Initialize each device. */
 	for (i = 0; i < scull_nr_devs; i++) {
 		scull_devices[i].quantum = scull_quantum;
 		scull_devices[i].qset = scull_qset;
@@ -648,7 +649,7 @@ int scull_init_module(void)
 		scull_setup_cdev(&scull_devices[i], i);
 	}
 
-        /* Call the init function for any friend device. */
+  /* Call the init function for any friend device. */
 	dev = MKDEV(scull_major, scull_minor + scull_nr_devs);
 	dev += scull_p_init(dev);
 	dev += scull_access_init(dev);

@@ -30,18 +30,21 @@ int main(int argc, char **argv)
   struct pollfd pfd;
   int n;
 
-  fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK); /* stdin */
-  pfd.fd = 0;  /* stdin */
+  int rfd = open("/dev/scullpipe", O_RDWR); 
+
+  fcntl(rfd, F_SETFL, fcntl(rfd, F_GETFL) | O_NONBLOCK); /* stdin */
+  pfd.fd = rfd;  /* stdin */
   pfd.events = POLLIN;
 
   while (1)
   {
-    n = read(0, buffer, 4096);
-    if (n >= 0)
-      write(1, buffer, n);
     n = poll(&pfd, 1, -1);
     if (n < 0)
       break;
+printf("===========read============\n");
+    n = read(rfd, buffer, 4096);
+    if (n >= 0)
+      write(1, buffer, n);
   }
   perror( n < 0 ? "stdin" : "stdout");
   exit(1);

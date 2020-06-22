@@ -30,6 +30,10 @@
 #include <linux/list.h>
 #include <linux/sched.h>
 #include <linux/spinlock_types.h>
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#include <linux/sched/signal.h>
+#endif
 
 #include "scull.h"        /* local definitions */
 
@@ -105,15 +109,15 @@ static int scull_u_open(struct inode *inode, struct file *filp)
 
 	spin_lock(&scull_u_lock);
 	if (scull_u_count && 
-			(scull_u_owner != current->cred->uid) &&  /* allow user */
-			(scull_u_owner != current->cred->euid) && /* allow whoever did su */
+			(scull_u_owner != current->cred->uid.val) &&  /* allow user */
+			(scull_u_owner != current->cred->euid.val) && /* allow whoever did su */
 			!capable(CAP_DAC_OVERRIDE)) { /* still allow root */
 		spin_unlock(&scull_u_lock);
 		return -EBUSY;   /* -EPERM would confuse the user */
 	}
 
 	if (scull_u_count == 0)
-		scull_u_owner = current->cred->uid; /* grab it */
+		scull_u_owner = current->cred->uid.val; /* grab it */
 
 	scull_u_count++;
 	spin_unlock(&scull_u_lock);
@@ -164,8 +168,8 @@ DEFINE_SPINLOCK(scull_w_lock);
 static inline int scull_w_available(void)
 {
 	return scull_w_count == 0 ||
-		scull_w_owner == current->cred->uid ||
-		scull_w_owner == current->cred->euid ||
+		scull_w_owner == current->cred->uid.val ||
+		scull_w_owner == current->cred->euid.val ||
 		capable(CAP_DAC_OVERRIDE);
 }
 
@@ -183,7 +187,7 @@ static int scull_w_open(struct inode *inode, struct file *filp)
 		spin_lock(&scull_w_lock);
 	}
 	if (scull_w_count == 0)
-		scull_w_owner = current->cred->uid; /* grab it */
+		scull_w_owner = current->cred->uid.val; /* grab it */
 	scull_w_count++;
 	spin_unlock(&scull_w_lock);
 

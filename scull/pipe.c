@@ -28,7 +28,12 @@
 #include <linux/cdev.h>
 #include <linux/sched.h>
 #include <asm/uaccess.h>
+#include <linux/version.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#include <linux/sched/signal.h>
+#endif
+#include <linux/proc_fs.h>
 #include "scull.h"		/* local definitions */
 
 struct scull_pipe {
@@ -127,8 +132,7 @@ static ssize_t scull_p_read (struct file *filp, char __user *buf, size_t count,
 	while (dev->rp == dev->wp) { /* nothing to read */
 		mutex_unlock(&dev->mutex); /* release the lock */
 		if (filp->f_flags & O_NONBLOCK) {
-		        PDEBUG("\"%s\" nonblocking read: returning EAGAIN\n",
-				current->comm);
+		        PDEBUG("\"%s\" nonblocking read: returning EAGAIN\n", current->comm);
 			return -EAGAIN;
 		}
 		PDEBUG("\"%s\" reading: going to sleep\n", current->comm);
@@ -167,8 +171,7 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 		
 		mutex_unlock(&dev->mutex);
 		if (filp->f_flags & O_NONBLOCK) {
-		        PDEBUG("\"%s\" nonblocking write: returning EAGAIN\n",
-				current->comm);
+		        PDEBUG("\"%s\" nonblocking write: returning EAGAIN\n", current->comm);
 			return -EAGAIN;
 		}
 		PDEBUG("\"%s\" writing: going to sleep\n",current->comm);
@@ -373,7 +376,7 @@ int scull_p_init(dev_t firstdev)
 		scull_p_setup_cdev(scull_p_devices + i, i);
 	}
 #ifdef SCULL_DEBUG
-	create_proc_read_entry("scullpipe", 0, NULL, scull_read_p_mem, NULL);
+	//create_proc_read_entry("scullpipe", 0, NULL, scull_read_p_mem, NULL);
 #endif
 	return scull_p_nr_devs;
 }
@@ -387,7 +390,7 @@ void scull_p_cleanup(void)
 	int i;
 
 #ifdef SCULL_DEBUG
-	remove_proc_entry("scullpipe", NULL);
+//	remove_proc_entry("scullpipe", NULL);
 #endif
 
 	if (!scull_p_devices)

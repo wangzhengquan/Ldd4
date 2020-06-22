@@ -1,0 +1,1 @@
+cmd_/home/wzq/wk/ldd4/scull/scull.ko := ld -r -m elf_i386 -T ./scripts/module-common.lds --build-id  -o /home/wzq/wk/ldd4/scull/scull.ko /home/wzq/wk/ldd4/scull/scull.o /home/wzq/wk/ldd4/scull/scull.mod.o ;  true
